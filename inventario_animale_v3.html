@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Inventário — Animale</title>
+<script src="https://cdn.jsdelivr.net/npm/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f2f2ee;min-height:100vh}
+.screen{display:none}.screen.active{display:block}
+.header{background:#1a472a;color:white;padding:1.1rem 1rem 0.9rem}
+.header-sub{font-size:10px;opacity:.6;letter-spacing:.1em;text-transform:uppercase;margin-bottom:2px}
+.header h1{font-size:19px;font-weight:700}
+.header-info{font-size:11px;opacity:.55;margin-top:3px}
+.nav-back{display:flex;align-items:center;gap:5px;font-size:13px;color:white;opacity:.85;cursor:pointer;padding-bottom:.6rem}
+.body{padding:1rem}
+.metric-row{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-bottom:.9rem}
+.metric{background:white;border-radius:10px;padding:.8rem}
+.metric-label{font-size:11px;color:#999;margin-bottom:3px}
+.metric-val{font-size:28px;font-weight:700;color:#222}
+.metric-val.green{color:#1a7a3a}.metric-val.amber{color:#c47a00}.metric-val.red{color:#c0392b}
+.progress-bg{background:#deded8;border-radius:20px;height:6px;margin-bottom:1.1rem;overflow:hidden}
+.progress-fill{background:#1a7a3a;border-radius:20px;height:6px;transition:width .4s}
+.section-label{font-size:10px;font-weight:700;color:#aaa;letter-spacing:.08em;text-transform:uppercase;margin-bottom:.5rem}
+.product-card{background:white;border-radius:12px;padding:.85rem 1rem;margin-bottom:7px;cursor:pointer;border-left:4px solid #e8e8e4;transition:transform .1s}
+.product-card:active{transform:scale(.98)}
+.product-card.ok{border-left-color:#1a7a3a}.product-card.div{border-left-color:#c0392b}
+.product-top{display:flex;align-items:flex-start;justify-content:space-between;gap:8px}
+.product-name{font-size:14px;font-weight:600;color:#1a1a1a;line-height:1.3}
+.product-fab{font-size:11px;color:#999;margin-top:2px}
+.badges{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+.badge{font-size:11px;padding:2px 8px;border-radius:20px;font-weight:600}
+.badge-a{background:#fef3c7;color:#92400e}.badge-b{background:#dbeafe;color:#1e40af}
+.badge-ok{background:#d1fae5;color:#065f46}.badge-div{background:#fee2e2;color:#991b1b}
+.badge-pend{background:#f0f0ec;color:#aaa}
+.product-sub{font-size:12px;color:#aaa;margin-top:6px}
+.product-sub strong{color:#555}
+.btn-green{width:100%;background:#1a472a;color:white;border:none;border-radius:10px;padding:.9rem;font-size:15px;font-weight:600;cursor:pointer;margin-top:.5rem}
+.btn-green:active{opacity:.85;transform:scale(.97)}
+.btn-outline{width:100%;background:white;color:#333;border:1px solid #ddd;border-radius:10px;padding:.9rem;font-size:14px;cursor:pointer;margin-top:8px}
+.btn-outline:active{background:#f5f5f5}
+
+/* SCANNER */
+#reader{border-radius:12px;overflow:hidden;margin-bottom:.75rem}
+#reader video{border-radius:12px}
+.scan-status{text-align:center;font-size:13px;color:#555;margin-bottom:.85rem;min-height:20px;padding:.5rem;border-radius:8px}
+.scan-found{background:#d1fae5;color:#065f46;font-weight:600}
+.scan-err{background:#fee2e2;color:#991b1b;font-weight:600}
+.divider{display:flex;align-items:center;gap:8px;margin:.75rem 0;color:#bbb;font-size:12px}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:#e0e0e0}
+.manual-row{display:flex;gap:8px}
+.manual-input{flex:1;height:44px;border:1px solid #ddd;border-radius:8px;padding:0 12px;font-size:15px;color:#222;background:white}
+.manual-input:focus{outline:none;border-color:#1a472a}
+.btn-manual{height:44px;padding:0 14px;background:#1a472a;color:white;border:none;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer}
+
+/* CONTAGEM */
+.product-banner{background:#1a472a;color:white;border-radius:10px;padding:.85rem 1rem;margin-bottom:1rem}
+.product-banner-name{font-size:15px;font-weight:700}
+.product-banner-fab{font-size:12px;opacity:.65;margin-top:2px}
+.field-label{font-size:12px;color:#888;margin-bottom:6px;margin-top:1rem;font-weight:500}
+.qty-row{display:flex;align-items:center;gap:10px}
+.qty-btn{width:56px;height:56px;border:1px solid #ddd;border-radius:10px;background:white;font-size:28px;color:#333;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.qty-btn:active{background:#f0f0ee;transform:scale(.91)}
+.qty-input{flex:1;height:56px;text-align:center;font-size:32px;font-weight:700;border:1px solid #ddd;border-radius:10px;background:white;color:#222}
+.qty-input:focus{outline:none;border-color:#1a472a}
+
+/* LOGIN */
+.login-box{max-width:340px;margin:3rem auto;padding:0 1rem}
+.login-logo{text-align:center;margin-bottom:2rem}
+.login-logo-icon{font-size:48px}
+.login-logo h2{font-size:22px;font-weight:700;color:#1a472a;margin-top:8px}
+.login-logo p{font-size:13px;color:#999}
+.login-field{margin-bottom:12px}
+.login-field label{font-size:12px;color:#888;display:block;margin-bottom:4px}
+.login-select{width:100%;height:44px;border:1px solid #ddd;border-radius:10px;padding:0 14px;font-size:15px;color:#222;background:white;-webkit-appearance:none;appearance:none}
+.login-select:focus{outline:none;border-color:#1a472a}
+.login-hint{font-size:11px;color:#ccc;text-align:center;margin-top:10px}
+
+/* GESTOR */
+.g-item{background:white;border-radius:12px;padding:.85rem 1rem;margin-bottom:7px;border-left:4px solid #e8e8e4}
+.g-item.ok{border-left-color:#1a7a3a}.g-item.div{border-left-color:#c0392b}.g-item.pend{border-left-color:#ddd}
+.g-item-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}
+.g-item-name{font-size:14px;font-weight:600;color:#1a1a1a}
+.g-item-sub{font-size:11px;color:#999;margin-top:2px}
+.g-counts{display:flex;gap:12px;font-size:12px;margin-top:6px}
+.g-counts span{color:#888}.g-counts strong{color:#333}
+.g-dif-neg{color:#c0392b;font-weight:700}.g-dif-pos{color:#c47a00;font-weight:700}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="screen-login" class="screen active">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">🐾</div>
+      <h2>Animale Petshop</h2>
+      <p>Inventário Cíclico</p>
+    </div>
+    <div class="login-field">
+      <label>Perfil de acesso</label>
+      <select id="perfil" class="login-select">
+        <option value="estoquista">Estoquista</option>
+        <option value="gestor">Gestor</option>
+      </select>
+    </div>
+    <div class="login-field">
+      <label>Unidade</label>
+      <select id="unidade" class="login-select">
+        <option>Washington Soares</option>
+        <option>Rio Mar Fortaleza</option>
+        <option>Rio Mar Kennedy</option>
+      </select>
+    </div>
+    <button class="btn-green" onclick="entrar()">Entrar</button>
+    <div class="login-hint">Protótipo · sem senha</div>
+  </div>
+</div>
+
+<!-- HOME ESTOQUISTA -->
+<div id="screen-home" class="screen">
+  <div class="header">
+    <div class="header-sub" id="home-unidade">Unidade</div>
+    <h1>Inventário Cíclico</h1>
+    <div class="header-info" id="home-data">Semana 01</div>
+  </div>
+  <div class="body">
+    <div class="metric-row">
+      <div class="metric"><div class="metric-label">Total</div><div class="metric-val" id="m-total">12</div></div>
+      <div class="metric"><div class="metric-label">Contados</div><div class="metric-val green" id="m-cont">0</div></div>
+      <div class="metric"><div class="metric-label">Pendentes</div><div class="metric-val amber" id="m-pend">12</div></div>
+      <div class="metric"><div class="metric-label">Divergências</div><div class="metric-val red" id="m-div">0</div></div>
+    </div>
+    <div class="progress-bg"><div class="progress-fill" id="prog" style="width:0%"></div></div>
+    <div class="section-label">📦 Itens fixos — Classe A</div>
+    <div id="lista-a"></div>
+    <div class="section-label" style="margin-top:1rem">📋 Categoria da semana — Classe B</div>
+    <div id="lista-b"></div>
+    <button class="btn-outline" style="margin-top:1.25rem" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<!-- SCANNER -->
+<div id="screen-scanner" class="screen">
+  <div class="header">
+    <div class="nav-back" onclick="voltarLista()">← Voltar</div>
+    <div class="header-sub">Leitura de código</div>
+    <h1>Bipe o produto</h1>
+  </div>
+  <div class="body">
+    <div id="reader"></div>
+    <div class="scan-status" id="scan-status">Posicione o código de barras na câmera</div>
+    <div class="divider">ou digite manualmente</div>
+    <div class="manual-row">
+      <input class="manual-input" type="text" id="manual-code" placeholder="Código de barras" inputmode="numeric" />
+      <button class="btn-manual" onclick="buscarManual()">Buscar</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTAGEM -->
+<div id="screen-count" class="screen">
+  <div class="header">
+    <div class="nav-back" onclick="voltarScanner()">← Bipar outro</div>
+    <div class="header-sub" id="count-cat">Classe A</div>
+    <h1 id="count-nome">Produto</h1>
+    <div class="header-info" id="count-fab">Fabricante</div>
+  </div>
+  <div class="body">
+    <div style="background:#f0f9f4;border-radius:10px;padding:.75rem 1rem;margin-bottom:1.25rem;font-size:13px;color:#1a7a3a;font-weight:600;">
+      ✓ Código lido com sucesso
+    </div>
+    <div class="field-label">Quantidade contada fisicamente</div>
+    <div class="qty-row">
+      <button class="qty-btn" onclick="changeQ(-1)">−</button>
+      <input class="qty-input" type="number" id="qty" value="0" min="0" inputmode="numeric" />
+      <button class="qty-btn" onclick="changeQ(1)">+</button>
+    </div>
+    <button class="btn-green" style="margin-top:1.5rem" onclick="confirmar()">✓ Confirmar contagem</button>
+    <button class="btn-outline" onclick="voltarScanner()">Cancelar</button>
+  </div>
+</div>
+
+<!-- GESTOR -->
+<div id="screen-gestor" class="screen">
+  <div class="header">
+    <div class="header-sub" id="gest-unidade">Unidade</div>
+    <h1>Painel do Gestor</h1>
+    <div class="header-info" id="gest-data">Semana 01</div>
+  </div>
+  <div class="body">
+    <div class="metric-row">
+      <div class="metric"><div class="metric-label">Acurácia</div><div class="metric-val green" id="g-ac">0%</div></div>
+      <div class="metric"><div class="metric-label">Divergências</div><div class="metric-val red" id="g-dv">0</div></div>
+      <div class="metric"><div class="metric-label">Contados</div><div class="metric-val green" id="g-cont">0</div></div>
+      <div class="metric"><div class="metric-label">Pendentes</div><div class="metric-val amber" id="g-pend">0</div></div>
+    </div>
+    <div class="progress-bg"><div class="progress-fill" id="g-prog" style="width:0%"></div></div>
+    <div class="section-label">Todos os itens — com saldo do sistema</div>
+    <div id="g-lista"></div>
+    <button class="btn-green" style="margin-top:1rem" onclick="compartilhar()">📤 Compartilhar relatório</button>
+    <button class="btn-outline" onclick="sair()">Sair</button>
+  </div>
+</div>
+
+<script>
+var perfil='estoquista', unidade='Washington Soares';
+var contagens={}, curId=null, html5Qr=null;
+
+var produtos=[
+  {id:1,nome:'Bravecto 10-20kg',sku:'7898043432015',cat:'A',fab:'MSD',sistema:8},
+  {id:2,nome:'NexGard Spectra M',sku:'7891031095045',cat:'A',fab:'Boehringer',sistema:12},
+  {id:3,nome:'Simparic 40mg',sku:'7896045201034',cat:'A',fab:'Zoetis',sistema:5},
+  {id:4,nome:'Royal Canin Mini Adult 1kg',sku:'3182550702379',cat:'A',fab:'Royal Canin',sistema:22},
+  {id:5,nome:'Hills Science Cat 400g',sku:'0052742100142',cat:'A',fab:'Hills',sistema:15},
+  {id:6,nome:'Frontline Spray 100ml',sku:'3661103011139',cat:'A',fab:'Boehringer',sistema:6},
+  {id:7,nome:'Drontal Caes 4 comp',sku:'7896045201060',cat:'A',fab:'Bayer',sistema:11},
+  {id:8,nome:'Premier Frango P 3kg',sku:'7896445401120',cat:'B',fab:'Premier',sistema:9},
+  {id:9,nome:'Shampoo Sanol Neutro',sku:'7896054900145',cat:'B',fab:'Sanol',sistema:18},
+  {id:10,nome:'Coleira Seresto G',sku:'4007221035435',cat:'B',fab:'Bayer',sistema:4},
+  {id:11,nome:'Bifinho Frango 65g',sku:'7896443230015',cat:'B',fab:'Bassar',sistema:30},
+  {id:12,nome:'Royal Canin Maxi Adult 3kg',sku:'3182550402285',cat:'B',fab:'Royal Canin',sistema:7},
+];
+
+function entrar(){
+  perfil=document.getElementById('perfil').value;
+  unidade=document.getElementById('unidade').value;
+  var hoje=new Date().toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'short'});
+  if(perfil==='gestor'){
+    document.getElementById('gest-unidade').textContent=unidade;
+    document.getElementById('gest-data').textContent='Semana 01 · '+hoje;
+    renderGestor(); showScreen('screen-gestor');
+  } else {
+    document.getElementById('home-unidade').textContent=unidade;
+    document.getElementById('home-data').textContent='Semana 01 · '+hoje;
+    renderLista(); showScreen('screen-home');
+  }
+}
+
+function renderLista(){
+  ['A','B'].forEach(function(cat){
+    var el=document.getElementById('lista-'+cat.toLowerCase());
+    el.innerHTML='';
+    produtos.filter(function(p){return p.cat===cat;}).forEach(function(p){
+      var c=contagens[p.id];
+      var badge='<span class="badge badge-pend">Pendente</span>';
+      var cls='';
+      if(c!==undefined){
+        if(c===p.sistema){badge='<span class="badge badge-ok">Confere</span>';cls='ok';}
+        else{badge='<span class="badge badge-div">Diverge</span>';cls='div';}
+      }
+      var sub=c!==undefined?'<div class="product-sub">Contado: <strong>'+c+' un.</strong></div>':'';
+      el.innerHTML+='<div class="product-card '+cls+'" onclick="irScanner('+p.id+')">'+
+        '<div class="product-top"><div><div class="product-name">'+p.nome+'</div><div class="product-fab">'+p.fab+'</div></div>'+
+        '<div class="badges"><span class="badge badge-'+p.cat.toLowerCase()+'">'+p.cat+'</span>'+badge+'</div></div>'+sub+'</div>';
+    });
+  });
+  updateMetrics();
+}
+
+function updateMetrics(){
+  var tot=produtos.length, cont=Object.keys(contagens).length;
+  var divs=Object.entries(contagens).filter(function(e){var p=produtos.find(function(x){return x.id==e[0];});return p&&e[1]!==p.sistema;}).length;
+  document.getElementById('m-total').textContent=tot;
+  document.getElementById('m-cont').textContent=cont;
+  document.getElementById('m-pend').textContent=tot-cont;
+  document.getElementById('m-div').textContent=divs;
+  document.getElementById('prog').style.width=Math.round((cont/tot)*100)+'%';
+}
+
+function irScanner(id){
+  curId=id;
+  document.getElementById('scan-status').textContent='Posicione o código de barras na câmera';
+  document.getElementById('scan-status').className='scan-status';
+  document.getElementById('manual-code').value='';
+  showScreen('screen-scanner');
+  setTimeout(iniciarScanner, 300);
+}
+
+function iniciarScanner(){
+  if(html5Qr) return;
+  if(typeof Html5Qrcode==='undefined'){
+    setStatus('Câmera indisponível. Use o campo manual abaixo.','err'); return;
+  }
+  html5Qr=new Html5Qrcode('reader');
+  html5Qr.start(
+    {facingMode:'environment'},
+    {fps:12, qrbox:{width:260,height:120}, aspectRatio:1.5,
+     formatsToSupport:[
+       Html5QrcodeSupportedFormats.EAN_13,
+       Html5QrcodeSupportedFormats.EAN_8,
+       Html5QrcodeSupportedFormats.CODE_128,
+       Html5QrcodeSupportedFormats.CODE_39,
+       Html5QrcodeSupportedFormats.UPC_A,
+       Html5QrcodeSupportedFormats.UPC_E
+     ]
+    },
+    function(code){
+      pararScanner();
+      processarCodigo(code);
+    },
+    function(){}
+  ).catch(function(){
+    html5Qr=null;
+    setStatus('Permissão de câmera negada. Use o campo manual abaixo.','err');
+  });
+}
+
+function pararScanner(){
+  if(html5Qr){
+    html5Qr.stop().catch(function(){});
+    html5Qr=null;
+  }
+}
+
+function setStatus(msg,tipo){
+  var el=document.getElementById('scan-status');
+  el.textContent=msg;
+  el.className='scan-status'+(tipo?' scan-'+tipo:'');
+}
+
+function buscarManual(){
+  var code=document.getElementById('manual-code').value.trim();
+  if(!code){return;}
+  pararScanner();
+  processarCodigo(code);
+}
+
+function processarCodigo(code){
+  var p=produtos.find(function(x){return x.sku===code;});
+  if(!p){
+    setStatus('Código '+code+' não encontrado na lista desta semana','err');
+    setTimeout(function(){
+      if(document.getElementById('screen-scanner').classList.contains('active')){
+        iniciarScanner();
+      }
+    },2000);
+    return;
+  }
+  curId=p.id;
+  document.getElementById('count-cat').textContent='Classe '+p.cat+' · '+p.fab;
+  document.getElementById('count-nome').textContent=p.nome;
+  document.getElementById('count-fab').textContent='SKU: '+p.sku;
+  var q=contagens[p.id]!==undefined?contagens[p.id]:0;
+  document.getElementById('qty').value=q;
+  showScreen('screen-count');
+}
+
+function changeQ(d){
+  var el=document.getElementById('qty');
+  el.value=Math.max(0,parseInt(el.value||0)+d);
+}
+
+function confirmar(){
+  var q=parseInt(document.getElementById('qty').value||0);
+  contagens[curId]=q;
+  voltarScanner();
+}
+
+function voltarScanner(){
+  pararScanner();
+  document.getElementById('scan-status').textContent='Posicione o código de barras na câmera';
+  document.getElementById('scan-status').className='scan-status';
+  document.getElementById('manual-code').value='';
+  showScreen('screen-scanner');
+  setTimeout(iniciarScanner,300);
+}
+
+function voltarLista(){
+  pararScanner();
+  renderLista();
+  showScreen('screen-home');
+}
+
+function renderGestor(){
+  var tot=produtos.length, cont=Object.keys(contagens).length;
+  var divItems=Object.entries(contagens).filter(function(e){var p=produtos.find(function(x){return x.id==e[0];});return p&&e[1]!==p.sistema;});
+  var ac=tot>0?Math.round((cont/tot)*100):0;
+  document.getElementById('g-ac').textContent=ac+'%';
+  document.getElementById('g-dv').textContent=divItems.length;
+  document.getElementById('g-cont').textContent=cont;
+  document.getElementById('g-pend').textContent=tot-cont;
+  document.getElementById('g-prog').style.width=ac+'%';
+  var lista=document.getElementById('g-lista');
+  lista.innerHTML='';
+  produtos.forEach(function(p){
+    var c=contagens[p.id];
+    var cls='pend', statusHtml='<span style="font-size:11px;color:#bbb;">Pendente</span>';
+    var countsHtml='';
+    if(c!==undefined){
+      var d=c-p.sistema;
+      if(d===0){
+        cls='ok';
+        statusHtml='<span style="font-size:11px;color:#1a7a3a;font-weight:600;">Confere</span>';
+        countsHtml='<div class="g-counts"><span>Sistema: <strong>'+p.sistema+'</strong></span><span>Contado: <strong>'+c+'</strong></span></div>';
+      } else {
+        cls='div';
+        statusHtml='<span style="font-size:11px;color:#c0392b;font-weight:600;">Diverge</span>';
+        countsHtml='<div class="g-counts"><span>Sistema: <strong>'+p.sistema+'</strong></span><span>Contado: <strong>'+c+'</strong></span>'+
+          '<span class="'+(d<0?'g-dif-neg':'g-dif-pos')+'">'+(d>0?'+':'')+d+'</span></div>';
+      }
+    }
+    lista.innerHTML+='<div class="g-item '+cls+'">'+
+      '<div class="g-item-top"><div><div class="g-item-name">'+p.nome+'</div>'+
+      '<div class="g-item-sub">'+p.fab+' · Sistema: '+p.sistema+' un.</div></div>'+
+      '<div class="badges"><span class="badge badge-'+p.cat.toLowerCase()+'">'+p.cat+'</span>'+statusHtml+'</div></div>'+
+      countsHtml+'</div>';
+  });
+}
+
+function compartilhar(){
+  renderGestor();
+  var tot=produtos.length, cont=Object.keys(contagens).length;
+  var divItems=Object.entries(contagens).filter(function(e){var p=produtos.find(function(x){return x.id==e[0];});return p&&e[1]!==p.sistema;});
+  var hoje=new Date().toLocaleDateString('pt-BR');
+  var txt='INVENTARIO CICLICO - ANIMALE PETSHOP\n'+unidade+' | '+hoje+'\n\nContados: '+cont+'/'+tot+'\nAcuracia: '+(tot>0?Math.round((cont/tot)*100):0)+'%\nDivergencias: '+divItems.length;
+  if(divItems.length>0){
+    txt+='\n\nDIVERGENCIAS:';
+    divItems.forEach(function(e){
+      var p=produtos.find(function(x){return x.id==e[0];});
+      var d=e[1]-p.sistema;
+      txt+='\n- '+p.nome+': sistema='+p.sistema+', contado='+e[1]+', dif='+(d>0?'+':'')+d;
+    });
+  }
+  if(navigator.share){navigator.share({title:'Inventario Animale',text:txt});}
+  else if(navigator.clipboard){navigator.clipboard.writeText(txt).then(function(){alert('Relatorio copiado! Cole no WhatsApp.');});}
+  else{alert(txt);}
+}
+
+function sair(){
+  pararScanner(); contagens={};
+  showScreen('screen-login');
+}
+
+function showScreen(id){
+  if(id!=='screen-scanner') pararScanner();
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+</script>
+</body>
+</html>
